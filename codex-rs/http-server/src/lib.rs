@@ -43,6 +43,7 @@
 pub mod agent_handler;
 pub mod message;
 pub mod server;
+pub const AGENT_MD_CONTENT: &str = include_str!("AGENTS.md");
 
 // Re-export main types for convenience
 pub use agent_handler::AgentHandler;

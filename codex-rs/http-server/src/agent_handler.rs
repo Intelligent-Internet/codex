@@ -1,13 +1,14 @@
-use crate::{HandlerResponse, MessageHandler, message::HttpMessage};
+use crate::{AGENT_MD_CONTENT, HandlerResponse, MessageHandler, message::HttpMessage};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use codex_core::{CodexConversation, ConversationManager, config::Config as CodexConfig};
 use codex_protocol::protocol::{AskForApproval, EventMsg, InputItem, Op, SandboxPolicy};
 use futures::stream::Stream;
+use std::fs;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 pub struct AgentHandler {
     conversation_manager: Arc<ConversationManager>,
@@ -42,7 +43,7 @@ impl AgentHandler {
                         // Filter out some event types
                         let should_yield = !matches!(
                             event_msg,
-                            EventMsg::AgentMessageDelta(_) | EventMsg::AgentReasoningDelta(_) | EventMsg::AgentReasoningRawContentDelta(_)
+                            EventMsg::AgentMessageDelta(_) | EventMsg::AgentReasoningDelta(_) | EventMsg::AgentReasoningRawContentDelta(_) | EventMsg::TokenCount(_)
                         );
 
                         // Yield the event if not filtered
@@ -114,6 +115,15 @@ impl MessageHandler for AgentHandler {
             info!("Bypassing approvals and sandbox (dangerous mode enabled)");
             config.approval_policy = AskForApproval::Never;
             config.sandbox_policy = SandboxPolicy::DangerFullAccess;
+        }
+
+        // Create AGENTS.md if it doesn't exist in the working directory
+        let agents_file = config.cwd.join("AGENTS.md");
+        if !agents_file.exists() {
+            match fs::write(&agents_file, AGENT_MD_CONTENT) {
+                Ok(_) => info!("Created AGENTS.md at {:?}", agents_file),
+                Err(e) => warn!("Warning: Could not create AGENTS.md: {}", e),
+            }
         }
 
         // Create a new Codex conversation
