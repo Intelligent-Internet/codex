@@ -135,51 +135,28 @@ async fn handle_messages(
     }
 }
 
-/// Create SSE response with keep-alive pings and client disconnect detection
+/// Create SSE response with keep-alive
 fn create_sse_response(
     mut data_stream: Pin<Box<dyn Stream<Item = EventMsg> + Send>>,
     request_id: Option<String>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let event_stream = async_stream::stream! {
-        let mut ping_interval = tokio::time::interval(Duration::from_secs(15));
-        ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-
         debug!("Starting SSE stream for request: {:?}", request_id);
 
-        loop {
-            tokio::select! {
-                // Send data from the handler stream
-                item = data_stream.next() => {
-                    match item {
-                        Some(event_msg) => {
-                            let msg = HttpMessage {
-                                id: request_id.clone(),
-                                work_dir: None,
-                                event: event_msg,
-                            };
+        while let Some(event_msg) = data_stream.next().await {
+            let msg = HttpMessage {
+                id: request_id.clone(),
+                work_dir: None,
+                event: event_msg,
+            };
 
-                            match msg.to_json() {
-                                Ok(json) => {
-                                    // Try to send the event, if it fails the client disconnected
-                                    yield Ok(Event::default().data(json));
-                                }
-                                Err(e) => {
-                                    error!("Failed to serialize response: {}", e);
-                                    break;
-                                }
-                            }
-                        }
-                        None => {
-                            // Stream ended normally
-                            debug!("Data stream ended for request: {:?}", request_id);
-                            break;
-                        }
-                    }
+            match msg.to_json() {
+                Ok(json) => {
+                    yield Ok(Event::default().data(json));
                 }
-                // Send keep-alive ping every 15 seconds
-                _ = ping_interval.tick() => {
-                    // Ping helps detect client disconnects
-                    yield Ok(Event::default().event("ping").data("ping"));
+                Err(e) => {
+                    error!("Failed to serialize response: {}", e);
+                    break;
                 }
             }
         }
