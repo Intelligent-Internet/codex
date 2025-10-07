@@ -126,6 +126,15 @@ impl MessageHandler for AgentHandler {
             }
         }
 
+        // Create codex_context.md if it doesn't exist in the working directory
+        let context_file = config.cwd.join("codex_context.md");
+        if !context_file.exists() {
+            match fs::write(&context_file, "") {
+                Ok(_) => info!("Created codex_context.md at {:?}", context_file),
+                Err(e) => warn!("Warning: Could not create codex_context.md: {}", e),
+            }
+        }
+
         // Create a new Codex conversation
         let new_conv = self
             .conversation_manager
