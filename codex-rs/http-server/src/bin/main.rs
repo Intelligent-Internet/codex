@@ -26,8 +26,8 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
     arg0_dispatch_or_else(|codex_linux_sandbox_exe| async move {
+        let args = Args::parse();
         run_main(
             codex_linux_sandbox_exe,
             CliConfigOverrides::default(),
