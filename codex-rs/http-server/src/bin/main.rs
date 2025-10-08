@@ -20,6 +20,14 @@ struct Args {
     #[arg(short, long, default_value = "0.0.0.0:8081")]
     addr: String,
 
+    /// Model the agent should use.
+    #[arg(long, short = 'm')]
+    model: Option<String>,
+
+    /// Enable web search (off by default). When enabled, the native Responses `web_search` tool is available to the model (no per‑call approval).
+    #[arg(long = "search", default_value_t = false)]
+    web_search: bool,
+
     /// Dangerously bypass approvals and sandbox
     #[arg(long, default_value = "true")]
     dangerously_bypass_approvals_and_sandbox: bool,
@@ -32,6 +40,8 @@ fn main() -> Result<()> {
             codex_linux_sandbox_exe,
             CliConfigOverrides::default(),
             args.addr,
+            args.model,
+            args.web_search,
             args.dangerously_bypass_approvals_and_sandbox,
         )
         .await?;
@@ -43,6 +53,8 @@ async fn run_main(
     codex_linux_sandbox_exe: Option<PathBuf>,
     cli_config_overrides: CliConfigOverrides,
     addr_str: String,
+    model: Option<String>,
+    web_search: bool,
     dangerously_bypass_approvals_and_sandbox: bool,
 ) -> Result<()> {
     // Initialize tracing with stderr output (like MCP server)
@@ -63,6 +75,8 @@ async fn run_main(
         cli_kv_overrides,
         ConfigOverrides {
             codex_linux_sandbox_exe,
+            model,
+            tools_web_search_request: Some(web_search),
             ..ConfigOverrides::default()
         },
     )
