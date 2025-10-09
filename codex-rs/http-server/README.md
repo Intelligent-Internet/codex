@@ -56,6 +56,26 @@ cargo build --release --bin sse-http-server
 ./target/release/sse-http-server -a 0.0.0.0:9000
 ```
 
+**With model selection**:
+
+```bash
+./target/release/sse-http-server --model gpt-5-codex
+# or short form
+./target/release/sse-http-server -m gpt-5
+```
+
+**With web search enabled**:
+
+```bash
+./target/release/sse-http-server --search
+```
+
+**Combined options**:
+
+```bash
+./target/release/sse-http-server -a 0.0.0.0:8081 -m gpt-5-codex --search
+```
+
 **Disable dangerous bypass mode**:
 
 ```bash
@@ -73,6 +93,8 @@ cargo build --release --bin sse-http-server
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
 | `--addr` | `-a` | Server bind address | `0.0.0.0:8081` |
+| `--model` | `-m` | Model the agent should use (e.g., gpt-5, gpt-5-codex) | (uses config default) |
+| `--search` | | Enable web search tool for the model | `false` |
 | `--dangerously-bypass-approvals-and-sandbox` | | Dangerously bypass approvals and sandbox | `true` |
 
 ### Server Output
